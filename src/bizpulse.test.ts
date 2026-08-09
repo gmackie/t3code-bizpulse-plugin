@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildCockpitViewModel, createBizPulseClient, createPollingCoordinator, normalizePulseSnapshot } from "./bizpulse.ts";
+import { buildCockpitViewModel, buildSurfaceModel, createBizPulseClient, createPollingCoordinator, normalizePulseSnapshot } from "./bizpulse.ts";
 
 describe("BizPulse adapter", () => {
   test("normalizes growth and CRM evidence into a plugin snapshot", () => {
@@ -31,5 +31,14 @@ describe("BizPulse adapter", () => {
       navigation: ["portfolio", "startups", "growth", "crm", "actions"],
       metrics: { healthScore: 82, followUps: 3 },
     });
+  });
+
+  test("builds native T3 surface cards from the normalized snapshot", () => {
+    const surface = buildSurfaceModel({ healthScore: 82, followUps: 3 });
+    expect(surface.pluginId).toBe("com.t3code.bizpulse");
+    expect(surface.cards).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "health-score", value: "82" }),
+      expect.objectContaining({ id: "follow-ups", value: "3" }),
+    ]));
   });
 });
