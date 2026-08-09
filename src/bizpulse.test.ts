@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createBizPulseClient, createPollingCoordinator, normalizePulseSnapshot } from "./bizpulse.ts";
+import { buildCockpitViewModel, createBizPulseClient, createPollingCoordinator, normalizePulseSnapshot } from "./bizpulse.ts";
 
 describe("BizPulse adapter", () => {
   test("normalizes growth and CRM evidence into a plugin snapshot", () => {
@@ -24,5 +24,12 @@ describe("BizPulse adapter", () => {
     expect(coordinator.snapshot).toBeNull();
     expect(await coordinator.refresh()).toEqual({ healthScore: 90, followUps: 1 });
     expect(coordinator.snapshot?.healthScore).toBe(90);
+  });
+
+  test("builds portfolio cockpit navigation and metrics", () => {
+    expect(buildCockpitViewModel({ healthScore: 82, followUps: 3 })).toEqual({
+      navigation: ["portfolio", "startups", "growth", "crm", "actions"],
+      metrics: { healthScore: 82, followUps: 3 },
+    });
   });
 });

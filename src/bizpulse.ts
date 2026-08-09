@@ -1,9 +1,11 @@
 export type PulseSnapshot = { healthScore: number | null; followUps: number };
+export type CockpitViewModel = { navigation: readonly string[]; metrics: PulseSnapshot };
 export type CommandRunner = (command: readonly string[]) => Promise<unknown>;
 
 export function normalizePulseSnapshot(value: any): PulseSnapshot {
   return { healthScore: typeof value?.growth?.score === "number" ? value.growth.score : typeof value?.score === "number" ? value.score : null, followUps: typeof value?.crm?.followUps === "number" ? value.crm.followUps : typeof value?.followUps === "number" ? value.followUps : 0 };
 }
+export function buildCockpitViewModel(snapshot: PulseSnapshot): CockpitViewModel { return { navigation: ["portfolio", "startups", "growth", "crm", "actions"], metrics: snapshot }; }
 
 export function createBizPulseClient(input: { startupId: string; run: CommandRunner }) {
   return { async snapshot() { return normalizePulseSnapshot(await input.run(["growth", "review", "--startup", input.startupId, "--json"])); } };
