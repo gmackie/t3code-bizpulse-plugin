@@ -1,7 +1,21 @@
+import { createBizPulseClient, type PulseSnapshot } from "./bizpulse.ts";
 import { createRpcHandler } from "./rpc.ts";
 
-const snapshot = JSON.parse(process.env.T3_PLUGIN_SNAPSHOT ?? '{"healthScore":null,"followUps":0}') as { healthScore: number | null; followUps: number };
-const handler = createRpcHandler({ snapshot, refresh: async () => snapshot });
+let snapshot = JSON.parse(process.env.T3_PLUGIN_SNAPSHOT ?? '{"healthScore":null,"followUps":0}') as PulseSnapshot;
+const commandPrefix = process.env.T3_PLUGIN_COMMAND?.trim().split(/\s+/u).filter(Boolean) ?? [];
+const client = commandPrefix.length > 0
+  ? createBizPulseClient({
+      startupId: process.env.T3_PLUGIN_STARTUP ?? "",
+      run: async (args) => {
+        const process = Bun.spawn([...commandPrefix, ...args], { stdout: "pipe", stderr: "ignore" });
+        const output = await new Response(process.stdout).text();
+        await process.exited;
+        return JSON.parse(output) as unknown;
+      },
+    })
+  : null;
+const refresh = async () => { if (client) snapshot = await client.snapshot(); return snapshot; };
+const handler = createRpcHandler({ get snapshot() { return snapshot; }, refresh });
 let buffer = "";
 process.stdin.setEncoding("utf8");
 process.stdin.on("data", (chunk) => {
