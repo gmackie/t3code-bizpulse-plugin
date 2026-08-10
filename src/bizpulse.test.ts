@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildCockpitViewModel, buildSurfaceModel, createBizPulseClient, createPollingCoordinator, normalizePulseSnapshot } from "./bizpulse.ts";
+import { buildCockpitViewModel, buildReviewWorkflow, buildSurfaceModel, createBizPulseClient, createPollingCoordinator, normalizePulseSnapshot } from "./bizpulse.ts";
 
 describe("BizPulse adapter", () => {
   test("normalizes growth and CRM evidence into a plugin snapshot", () => {
@@ -40,5 +40,12 @@ describe("BizPulse adapter", () => {
       expect.objectContaining({ id: "health-score", value: "82" }),
       expect.objectContaining({ id: "follow-ups", value: "3" }),
     ]));
+  });
+
+  test("builds a portfolio review workflow from growth and CRM evidence", () => {
+    const workflow = buildReviewWorkflow({ healthScore: 62, followUps: 4 });
+    expect(workflow.currentStage).toBe("review");
+    expect(workflow.evidence?.[0]?.status).toBe("warning");
+    expect(workflow.actions?.[0]?.id).toBe("approve");
   });
 });
