@@ -1,32 +1,81 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "com.t3code.bizpulse",
   "displayName": "BizPulse portfolio operations",
-  "version": "0.3.0",
-  "runtime": { "kind": "managed-app", "command":["bun","src/stdio.ts"], "restart": "on-failure" },
-  "contributes": {
-    "navigation": [
-      { "id": "bizpulse.portfolio", "title": "Portfolio", "path": "/" },
-      { "id": "bizpulse.startups", "title": "Startups", "path": "/startups" },
-      { "id": "bizpulse.growth", "title": "Growth", "path": "/growth" },
-      { "id": "bizpulse.crm", "title": "CRM", "path": "/crm" },
-      { "id": "bizpulse.actions", "title": "Actions", "path": "/actions" }
-    ],
-    "panels": [
-      { "id": "bizpulse.portfolio", "title": "Portfolio pulse", "surface": "project" },
-      { "id": "bizpulse.crm", "title": "CRM follow-ups", "surface": "thread.sidePanel" }
-    ],
-    "workflows": [{ "id": "bizpulse.portfolio-review", "title": "Portfolio review", "surface": "thread.main" }],
-    "settings": [
-      { "id": "bizpulse.startup", "title": "Startup id", "scope": "project", "field": { "kind": "text", "placeholder": "startup id" } },
-      { "id": "bizpulse.polling-seconds", "title": "Refresh interval", "scope": "server", "field": { "kind": "number", "default": 60, "min": 15, "max": 3600, "step": 15 } }
-    ],
-    "settingsPanels": [{ "id": "bizpulse.connection", "title": "BizPulse", "description": "Monitor startup health, growth evidence, and CRM follow-ups.", "settingIds": ["bizpulse.startup", "bizpulse.polling-seconds"] }],
-    "hooks": ["turn.settled", "runtime.error"]
+  "version": "0.4.0",
+  "description": "Startup portfolio health, growth bottlenecks, CRM follow-ups and BizPulse agent actions.",
+  "mcpServer": {
+    "name": "bizpulse",
+    "transport": {
+      "type": "stdio",
+      "command": "bun",
+      "args": [
+        "${pluginRoot}/src/mcp.ts"
+      ],
+      "env": [
+        {
+          "name": "BIZPULSE_STARTUP_ID",
+          "value": "",
+          "title": "Startup id",
+          "description": "Default BizPulse startup for reviews and CRM follow-ups. Tools also accept startupId."
+        },
+        {
+          "name": "BIZPULSE_POLL_SECONDS",
+          "value": "60",
+          "title": "Refresh interval in seconds (15-3600)"
+        },
+        {
+          "name": "BIZPULSE_COMMAND",
+          "value": "pulse",
+          "title": "BizPulse CLI command",
+          "description": "The pulse CLI, e.g. pulse or an absolute path. It must already be signed in (pulse login) unless an API key is set below."
+        },
+        {
+          "name": "PULSE_API_URL",
+          "value": "",
+          "title": "BizPulse API endpoint",
+          "description": "Optional. Defaults to the pulse CLI's saved endpoint."
+        },
+        {
+          "name": "PULSE_API_KEY",
+          "value": "",
+          "sensitive": true,
+          "title": "BizPulse agent API key",
+          "description": "Optional. Defaults to the pulse CLI's saved login."
+        }
+      ]
+    }
   },
-  "capabilities": [
-    { "kind": "filesystem.read", "roots": ["project.root"] },
-    { "kind": "network.connect", "hosts": ["bizpulse.forgegraf.com"] },
-    { "kind": "ui.embed", "surfaces": ["project", "thread.sidePanel", "thread.main"] }
-  ]
+  "contributes": {
+    "panels": [
+      {
+        "id": "bizpulse-portfolio",
+        "title": "Portfolio pulse",
+        "scope": "project",
+        "resourceUri": "ui://bizpulse/portfolio.html",
+        "tool": {
+          "name": "bizpulse_portfolio"
+        }
+      },
+      {
+        "id": "bizpulse-crm",
+        "title": "CRM follow-ups",
+        "scope": "thread",
+        "resourceUri": "ui://bizpulse/crm.html"
+      }
+    ],
+    "commands": [
+      {
+        "id": "bizpulse-open-portfolio",
+        "title": "BizPulse: Open portfolio pulse",
+        "panel": "bizpulse-portfolio"
+      },
+      {
+        "id": "bizpulse-open-crm",
+        "title": "BizPulse: Open CRM follow-ups",
+        "panel": "bizpulse-crm"
+      }
+    ]
+  },
+  "t3Tools": []
 }
