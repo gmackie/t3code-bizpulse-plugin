@@ -1,36 +1,47 @@
+import { normalizePollingSeconds } from "../bizpulse.ts";
 import { toolData } from "./bridge.ts";
-import { renderPortfolio, type PortfolioData } from "./render.ts";
+import { renderPortfolio, renderPortfolioError, type PortfolioData } from "./render.ts";
 import { errorText, mountReview, startView } from "./shared.client.ts";
 
 const root = document.getElementById("app")!;
 const bridge = startView("bizpulse-portfolio");
 let data: PortfolioData | undefined;
+// Set when the latest load failed; any data on screen is then the last good load.
+let error: string | undefined;
 let timer: ReturnType<typeof setTimeout> | undefined;
 let review: ReturnType<typeof mountReview> | undefined;
 
+function schedule(seconds: number) {
+  clearTimeout(timer);
+  timer = setTimeout(() => void refresh(), seconds * 1000);
+}
+
+// Renders the current state and always re-arms the poll, including after a
+// failure before anything has loaded.
 function draw() {
-  if (!data) return;
+  if (!data) {
+    root.innerHTML = renderPortfolioError(error ?? "BizPulse portfolio failed to load.");
+    schedule(normalizePollingSeconds(undefined));
+    return;
+  }
   // Keep the review pane (and its state) across list refreshes.
   const pane = root.querySelector<HTMLElement>("[data-role=review]");
-  root.innerHTML = renderPortfolio(data);
+  root.innerHTML = renderPortfolio(data, error);
   if (pane) root.querySelector("[data-role=review]")!.replaceWith(pane);
   else review = mountReview(bridge, root.querySelector<HTMLElement>("[data-role=review]")!);
-  clearTimeout(timer);
-  timer = setTimeout(() => void refresh(), data.pollSeconds * 1000);
+  schedule(data.pollSeconds);
 }
 
 async function refresh() {
   if (document.visibilityState === "hidden") {
-    timer = setTimeout(() => void refresh(), 5000);
+    schedule(5);
     return;
   }
   try {
     data = toolData<PortfolioData>(await bridge.callTool("bizpulse_portfolio", {}));
+    error = undefined;
   } catch (cause) {
-    const message = `Refresh failed: ${cause instanceof Error ? cause.message : cause}`;
-    const status = root.querySelector("header .header-meta span");
-    if (status) status.textContent = message;
-    else root.textContent = message;
+    error = `Refresh failed: ${cause instanceof Error ? cause.message : String(cause)}`;
   }
   draw();
 }
@@ -42,12 +53,12 @@ root.addEventListener("click", (event) => {
 });
 
 bridge.onToolResult = (result) => {
-  if (result.isError) {
-    root.textContent = errorText(result, "BizPulse portfolio failed to load.");
-    return;
+  if (result.isError) error = errorText(result, "BizPulse portfolio failed to load.");
+  else {
+    data = toolData<PortfolioData>(result);
+    error = undefined;
   }
-  data = toolData<PortfolioData>(result);
   draw();
 };
 // The panel's opening tool delivers the result; fetch if nothing arrives.
-void bridge.connect().then(() => setTimeout(() => void (data ? undefined : refresh()), 250));
+void bridge.connect().then(() => setTimeout(() => void (data || error ? undefined : refresh()), 250));

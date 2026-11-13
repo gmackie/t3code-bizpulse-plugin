@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { buildReviewWorkflow } from "../bizpulse.ts";
-import { renderCrm, renderPortfolio, renderReview, type ReviewData } from "./render.ts";
+import { renderCrm, renderPortfolio, renderPortfolioError, renderReview, type ReviewData } from "./render.ts";
 
 const status = {
   opsScores: [{ startupId: "s1", name: "Acme <script>alert(1)</script>", score: 64, grade: "C", status: "warning" }],
@@ -30,6 +30,23 @@ describe("view renderers", () => {
     expect(html).toContain("(default)");
     expect(html).not.toContain("Runway");
     expect(renderPortfolio({ ...status, opsScores: [], pollSeconds: 60, refreshedAt: "" })).toContain("No startups in this BizPulse workspace.");
+  });
+
+  it("marks the portfolio stale when the latest refresh failed", () => {
+    const fresh = renderPortfolio({ ...status, pollSeconds: 60, refreshedAt: "2026-11-13T00:00:00Z" });
+    expect(fresh).not.toContain('role="alert"');
+    const stale = renderPortfolio({ ...status, pollSeconds: 60, refreshedAt: "2026-11-13T00:00:00Z" }, "Refresh failed: <BizPulse> timed out");
+    expect(stale).toContain('role="alert"');
+    expect(stale).toContain("Refresh failed: &lt;BizPulse&gt; timed out");
+    expect(stale).toContain("Last good refresh");
+    expect(stale).toContain("Acme &lt;script&gt;");
+  });
+
+  it("shows the load error and a refresh control before any portfolio has loaded", () => {
+    const html = renderPortfolioError("BizPulse is signed out");
+    expect(html).toContain('role="alert"');
+    expect(html).toContain("BizPulse is signed out");
+    expect(html).toContain('data-action="refresh"');
   });
 
   it("offers approval only for proposed actions, and disables it while busy", () => {

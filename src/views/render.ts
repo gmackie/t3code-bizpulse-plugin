@@ -34,7 +34,19 @@ const statusTone: Record<string, string> = { healthy: "positive", ok: "positive"
 const priorityTone: Record<string, string> = { critical: "negative", high: "warning", medium: "neutral", low: "muted" };
 const actionTone: Record<string, string> = { proposed: "active", draft: "neutral", approved: "positive", executing: "active", completed: "positive", failed: "negative", rejected: "muted", cancelled: "muted" };
 
-export function renderPortfolio(data: PortfolioData): string {
+const portfolioHeader = (meta: string) => `<header>
+  <h1>Portfolio pulse</h1>
+  <div class="header-meta"><span>${meta}</span><button type="button" data-action="refresh">Refresh</button></div>
+</header>`;
+
+// Shown when the portfolio has never loaded; the view keeps polling.
+export function renderPortfolioError(error: string): string {
+  return `${portfolioHeader("Not loaded")}
+<p class="error" role="alert">${esc(error)}</p>`;
+}
+
+// `error` marks the data as stale: the last refresh failed and this is the last good load.
+export function renderPortfolio(data: PortfolioData, error?: string): string {
   const alerts = new Map(data.startups.map((item) => [item.id, item.urgency?.level && item.urgency.level !== "ok" ? (item.urgency.topIssue ?? item.urgency.level) : undefined]));
   const rows = data.opsScores.length
     ? data.opsScores
@@ -52,11 +64,8 @@ export function renderPortfolio(data: PortfolioData): string {
         .join("\n")
     : `<li class="empty">No startups in this BizPulse workspace.</li>`;
   const { portfolio } = data;
-  return `<header>
-  <h1>Portfolio pulse</h1>
-  <div class="header-meta"><span>Refreshed ${esc(time(data.refreshedAt))} · every ${esc(data.pollSeconds)}s</span><button type="button" data-action="refresh">Refresh</button></div>
-</header>
-<ul class="metrics">
+  return `${portfolioHeader(`${error ? "Last good refresh" : "Refreshed"} ${esc(time(data.refreshedAt))} · every ${esc(data.pollSeconds)}s`)}
+${error ? `<p class="error" role="alert">${esc(error)}</p>\n` : ""}<ul class="metrics">
   <li><span class="metric-value">${esc(money(portfolio.mrr))}</span><span class="metric-label">MRR</span></li>
   <li><span class="metric-value ${portfolio.openAlerts ? "tone-warning" : ""}">${esc(portfolio.openAlerts)}</span><span class="metric-label">Open alerts</span></li>
   <li><span class="metric-value ${portfolio.failedPayments ? "tone-negative" : ""}">${esc(portfolio.failedPayments)}</span><span class="metric-label">Failed payments</span></li>
