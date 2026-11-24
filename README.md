@@ -1,11 +1,14 @@
 # T3 Code BizPulse plugin
 
-BizPulse portfolio health, growth bottlenecks, CRM follow-ups and agent actions in T3 Code, as an MCP server with MCP Apps views. It reads BizPulse through the `pulse` CLI's JSON commands, so BizPulse remains the owner of its own credentials and state.
+BizPulse shows portfolio health, growth bottlenecks, CRM follow-ups and proposed actions in T3 Code.
 
 ## Install
 
-1. Install the `pulse` CLI and sign in (`pulse login`), or create a BizPulse agent API key.
-2. In T3 Code, install this directory as a plugin (manifest `t3-plugin.json`, schema v2) and fill in:
+Install this directory in T3 and sign in under **Settings → Tools → bizpulse**. The plugin connects to `https://bizpulse.cc/mcp/portfolio`. Select a workspace and grant `portfolio:read`, `crm:read` and `actions:read` for its views. You can also select `actions:approve` to open a specific action for confirmation in your signed-in browser.
+
+### Standalone stdio operator
+
+`bun run mcp` uses the `pulse` CLI. Sign in with `pulse login` or supply its API key. Set optional environment variables when launching the operator.
 
 | Variable | Meaning |
 |---|---|
@@ -31,9 +34,9 @@ Tools for agents and views:
 | `bizpulse_crm_followups` | model, app | `pulse crm daily-followups`, renders the CRM view |
 | `bizpulse_growth_review` | model, app | `pulse growth review` |
 | `bizpulse_actions_list` | model, app | `pulse actions list` |
-| `bizpulse_action_approve` | app only | Approves one proposed action in BizPulse. Only a human in the review view can call it. |
+| `bizpulse_action_approve` | app only | Opens the signed-in owner’s review for one proposed action. |
 
-When the CLI is missing, signed out, or BizPulse is down, tools return an error result rather than empty data.
+The standalone operator reports CLI sign-in and connection errors to its caller.
 
 See [docs/manifest-v2.md](docs/manifest-v2.md) for the v1 → v2 mapping and what was removed.
 

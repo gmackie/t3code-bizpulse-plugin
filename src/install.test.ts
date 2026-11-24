@@ -7,12 +7,30 @@ import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import manifest from "../t3-plugin.json";
 import { ACME, FAKE_PULSE } from "./testing.ts";
 
-it("launches the installed manifest from another directory and serves its panels", async () => {
+it("installs the hosted OAuth server and keeps the panel commands", () => {
+  expect(manifest.mcpServer).toEqual({
+    name: "bizpulse",
+    transport: {
+      type: "http",
+      url: "https://bizpulse.cc/mcp/portfolio",
+      headers: [],
+      auth: { type: "oauth", scopes: ["portfolio:read", "crm:read", "actions:read", "actions:approve"] },
+    },
+  });
+  expect(manifest.contributes.panels.map((panel) => panel.id)).toEqual([
+    "bizpulse-portfolio",
+    "bizpulse-crm",
+  ]);
+  const panels = new Set(manifest.contributes.panels.map((panel) => panel.id));
+  for (const command of manifest.contributes.commands) expect(panels.has(command.panel)).toBe(true);
+});
+
+it("launches the standalone stdio operator from another directory and serves its panels", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "bizpulse-install-"));
   const root = new URL("../", import.meta.url).pathname.replace(/\/$/, "");
   const transport = new StdioClientTransport({
-    command: manifest.mcpServer.transport.command,
-    args: manifest.mcpServer.transport.args.map((arg) => arg.replaceAll("${pluginRoot}", root)),
+    command: process.execPath,
+    args: [join(root, "src/mcp.ts")],
     cwd,
     env: { PATH: process.env.PATH ?? "", BIZPULSE_COMMAND: FAKE_PULSE.join(" "), BIZPULSE_STARTUP_ID: ACME },
   });
