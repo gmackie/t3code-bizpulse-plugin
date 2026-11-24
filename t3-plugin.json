@@ -2,48 +2,23 @@
   "schemaVersion": 2,
   "id": "com.t3code.bizpulse",
   "displayName": "BizPulse portfolio operations",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Startup portfolio health, growth bottlenecks, CRM follow-ups and BizPulse agent actions.",
   "mcpServer": {
     "name": "bizpulse",
     "transport": {
-      "type": "stdio",
-      "command": "bun",
-      "args": [
-        "${pluginRoot}/src/mcp.ts"
-      ],
-      "env": [
-        {
-          "name": "BIZPULSE_STARTUP_ID",
-          "value": "",
-          "title": "Startup id",
-          "description": "Default BizPulse startup for reviews and CRM follow-ups. Tools also accept startupId."
-        },
-        {
-          "name": "BIZPULSE_POLL_SECONDS",
-          "value": "60",
-          "title": "Refresh interval in seconds (15-3600)"
-        },
-        {
-          "name": "BIZPULSE_COMMAND",
-          "value": "pulse",
-          "title": "BizPulse CLI command",
-          "description": "The pulse CLI, e.g. pulse or an absolute path. It must already be signed in (pulse login) unless an API key is set below."
-        },
-        {
-          "name": "PULSE_API_URL",
-          "value": "",
-          "title": "BizPulse API endpoint",
-          "description": "Optional. Defaults to the pulse CLI's saved endpoint."
-        },
-        {
-          "name": "PULSE_API_KEY",
-          "value": "",
-          "sensitive": true,
-          "title": "BizPulse agent API key",
-          "description": "Optional. Defaults to the pulse CLI's saved login."
-        }
-      ]
+      "type": "http",
+      "url": "https://bizpulse.cc/mcp/portfolio",
+      "headers": [],
+      "auth": {
+        "type": "oauth",
+        "scopes": [
+          "portfolio:read",
+          "crm:read",
+          "actions:read",
+          "actions:approve"
+        ]
+      }
     }
   },
   "contributes": {
